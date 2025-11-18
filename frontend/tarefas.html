@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tarefas</title>
+
+    <style>
+        body {
+            font-family: "Inter", Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background: #2e7d32;
+            color: white;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        header button:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 25px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: #f3f3f3;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #4caf50;
+            background: white;
+        }
+
+        button {
+            margin-top: 15px;
+            background: #4caf50;
+            color: white;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #43a047;
+            transform: scale(1.02);
+        }
+
+        .tarefa {
+            background: white;
+            padding: 16px;
+            margin-top: 15px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-left: 6px solid #4caf50;
+        }
+
+        .tarefa h4 { margin: 0; }
+        .status { color: #555; font-size: 14px; }
+
+        .btn-concluir {
+            background: #2e7d32;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn-editar {
+            background: #1e88e5;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .btn-excluir {
+            background: #e53935;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    Sistema de Tarefas
+    <button onclick="logout()">Sair</button>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Criar Nova Tarefa</h2>
+
+        <input id="titulo" placeholder="Título da tarefa">
+        <textarea id="descricao" placeholder="Descrição (opcional)"></textarea>
+
+        <button onclick="criarTarefa()">Criar Tarefa</button>
+    </div>
+
+    <div class="card">
+        <h2>Minhas Tarefas</h2>
+        <div id="lista"></div>
+    </div>
+
+</div>
+
+<script>
+
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "login.html";
+
+async function carregarTarefas() {
+    const resp = await fetch("http://localhost:3000/tarefas", {
+        headers: { "Authorization": token }
+    });
+
+    const tarefas = await resp.json();
+    const div = document.getElementById("lista");
+    div.innerHTML = "";
+
+    tarefas.forEach(t => {
+        div.innerHTML += `
+            <div class="tarefa">
+                <h4>${t.titulo}</h4>
+                <p>${t.descricao || ""}</p>
+                <p class="status">Status: <b>${t.status}</b></p>
+
+                <button class="btn-editar" onclick="editar('${t.id_tarefa}', '${t.titulo}', \`${t.descricao || ""}\`)">Editar</button>
+                <button class="btn-excluir" onclick="excluir('${t.id_tarefa}')">Excluir</button>
+
+                ${
+                    t.status !== "concluida" 
+                    ? `<button class="btn-concluir" onclick="concluir('${t.id_tarefa}')">Concluir</button>` 
+                    : ""
+                }
+            </div>
+        `;
+    });
+}
+
+async function criarTarefa() {
+    const titulo = document.getElementById("titulo").value;
+    const descricao = document.getElementById("descricao").value;
+
+    await fetch("http://localhost:3000/tarefas", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": token
+        },
+        body: JSON.stringify({
+            titulo,
+            descricao,
+            prioridade: 3,
+            id_categoria: "CAT-GEN"
+        })
+    });
+
+    document.getElementById("titulo").value = "";
+    document.getElementById("descricao").value = "";
+
+    carregarTarefas();
+}
+
+async function concluir(id) {
+    await fetch(`http://localhost:3000/tarefas/${id}/concluir`, {
+        method: "PUT",
+        headers: { "Authorization": token }
+    });
+
+    carregarTarefas();
+}
+
+async function editar(id, tituloAtual, descricaoAtual) {
+    const novoTitulo = prompt("Novo título:", tituloAtual);
+    if (novoTitulo === null) return;
+
+    const novaDescricao = prompt("Nova descrição:", descricaoAtual);
+    if (novaDescricao === null) return;
+
+    await fetch(`http://localhost:3000/tarefas/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": token
+        },
+        body: JSON.stringify({
+            titulo: novoTitulo,
+            descricao: novaDescricao
+        })
+    });
+
+    carregarTarefas();
+}
+
+async function excluir(id) {
+    if (!confirm("Deseja realmente excluir esta tarefa?")) return;
+
+    await fetch(`http://localhost:3000/tarefas/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": token }
+    });
+
+    carregarTarefas();
+}
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+carregarTarefas();
+
+</script>
+
+</body>
+</html>

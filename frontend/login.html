@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Tarefas</title>
+
+    <style>
+        body {
+            font-family: "Inter", Arial, sans-serif;
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box {
+            background: white;
+            width: 350px;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2e7d32;
+            font-weight: 700;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: #f3f3f3;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+
+        input:focus {
+            border-color: #4caf50;
+            background: #fff;
+        }
+
+        button {
+            margin-top: 18px;
+            width: 100%;
+            padding: 12px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #43a047;
+            transform: scale(1.02);
+        }
+
+        #msg {
+            margin-top: 10px;
+            color: red;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Bem-vindo</h2>
+    <p style="color:#555; margin-top:-10px;">Faça login para continuar</p>
+
+    <input type="email" id="email" placeholder="E-mail">
+    <input type="password" id="senha" placeholder="Senha">
+
+    <button onclick="login()">Entrar</button>
+
+    <p id="msg"></p>
+</div>
+
+<script>
+async function login() {
+    const email = document.getElementById("email").value;
+    const senha = document.getElementById("senha").value;
+
+    const resp = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha })
+    });
+
+    const data = await resp.json();
+
+    if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("id_usuario", data.id_usuario);
+        localStorage.setItem("grupo", data.grupo);
+
+        window.location.href = "tarefas.html";
+    } else {
+        document.getElementById("msg").innerText =
+            data.erro || "Credenciais inválidas";
+    }
+}
+</script>
+
+</body>
+</html>
